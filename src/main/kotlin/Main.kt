@@ -6,8 +6,9 @@ val sqlCreation = File("src\\main\\resources\\task1.sql").readText()
 val sqlInitialisation = File("src\\main\\resources\\task2_generated.sql").readText()
 val timesWithCashe = mutableListOf<Long>()
 val timesWithoutCashe = mutableListOf<Long>()
-const val coroutinesForSelections = 7
-const val coroutinesAll = 10
+const val coroutinesForSelections = 7000
+const val coroutinesAll = 10000
+@Volatile
 var totalQueries = 0
 
 fun main(args: Array<String>) {
@@ -23,7 +24,7 @@ private fun execute(useCashe: Boolean) {
         GlobalScope.launch {
             executeStatement(selectFromVisitors(), useCashe, proxy)
             executeStatement(selectFromWaiters(), useCashe, proxy)
-            totalQueries++
+            totalQueries += 2
         }
     }
     for (i in coroutinesForSelections until coroutinesAll) {
@@ -31,7 +32,7 @@ private fun execute(useCashe: Boolean) {
             val surname = if (i % 2 == 0) "Воронцова" else "Михайлова"
             executeStatement(updateVisitors(surname), useCashe, proxy)
             executeStatement(updateWaiters(8 + i % 2), useCashe, proxy)
-            totalQueries++
+            totalQueries += 2
         }
     }
     while (totalQueries < coroutinesAll) {}
