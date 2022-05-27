@@ -4,7 +4,7 @@ import java.sql.ResultSet
 
 class Proxy {
 
-    private val connection = connect();
+    private val connection = connect()
 
     init {
         init(connection)
@@ -12,31 +12,30 @@ class Proxy {
 
     private val cashe = mutableMapOf<String, String>()
 
-    private var changingCashe = false
+    @Synchronized private fun changeCashe(key: String, value: String, addNotRemove: Boolean) {
+        if (addNotRemove)
+            cashe[key] = value
+        else
+            cashe.remove(key)
+    }
 
     fun executeSQL(sql: String, useCashe: Boolean): String {
         val statement = connection.prepareStatement(sql)
         if (useCashe) {
             if (sql.startsWith("SELECT")) {
-                while (changingCashe) {}
                 return if (cashe[sql] != null) {
                     cashe[sql]!!
                 } else {
                     val res = getRowsFromSQL(statement.executeQuery())
-                    changingCashe = true
-                    cashe[sql] = res
-                    changingCashe = false
+                    changeCashe(sql, res, true)
                     res
                 }
             } else {
                 val table = getTableFromSQL(sql, "UPDATE")
-                while (changingCashe) {}
-                val cashedQueries = cashe.toMap().keys.toList()
+                val cashedQueries = cashe.keys.toList()
                 for (query in cashedQueries) {
                     if (getTableFromSQL(query, "FROM") == table) {
-                        changingCashe = true
-                        cashe.remove(query)
-                        changingCashe = false
+                        changeCashe(query, "", false)
                     }
                 }
                 return statement.executeUpdate().toString()
@@ -51,7 +50,7 @@ class Proxy {
     }
 
     private fun getRowsFromSQL(rs: ResultSet): String {
-        val columns = rs.metaData.columnCount;
+        val columns = rs.metaData.columnCount
         val res = StringBuilder()
         while (rs.next()) {
             for (i in 1..columns) {

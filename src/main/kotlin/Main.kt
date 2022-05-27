@@ -6,12 +6,14 @@ const val selectQueriesCount = 7000
 const val allQueriesCount = 10000
 val sqlCreation = File("src\\main\\resources\\task1.sql").readText()
 val sqlInitialisation = File("src\\main\\resources\\task2_generated.sql").readText()
-val timesWithCashe = MutableList(allQueriesCount * 2) { 0.toLong() }
-val timesWithoutCashe = MutableList(allQueriesCount * 2) { 0.toLong() }
-@Volatile
+val timesWithCashe = MutableList(allQueriesCount) { 0.toLong() }
+val timesWithoutCashe = MutableList(allQueriesCount) { 0.toLong() }
 var totalQueries = 0
+@Synchronized fun updateTotalQueries() {
+    totalQueries += 2
+}
 
-fun main(args: Array<String>) {
+fun main() {
     execute(true)
     execute(false)
 }
@@ -24,7 +26,7 @@ private fun execute(useCashe: Boolean) {
         GlobalScope.launch {
             executeStatement(selectFromVisitors(), useCashe, proxy, i)
             executeStatement(selectFromWaiters(), useCashe, proxy, i + 1)
-            totalQueries += 2
+            updateTotalQueries()
         }
     }
     for (i in selectQueriesCount until allQueriesCount step 2) {
@@ -33,7 +35,7 @@ private fun execute(useCashe: Boolean) {
             val addressId = 8 + i % 4
             executeStatement(updateVisitors(surname), useCashe, proxy, i)
             executeStatement(updateWaiters(addressId), useCashe, proxy, i + 1)
-            totalQueries += 2
+            updateTotalQueries()
         }
     }
     while (totalQueries < allQueriesCount) {}
