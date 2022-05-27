@@ -2,12 +2,12 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
 
-const val coroutinesForSelections = 7000
-const val coroutinesAll = 10000
+const val selectQueriesCount = 7000
+const val allQueriesCount = 10000
 val sqlCreation = File("src\\main\\resources\\task1.sql").readText()
 val sqlInitialisation = File("src\\main\\resources\\task2_generated.sql").readText()
-val timesWithCashe = MutableList(coroutinesAll * 2) { 0.toLong() }
-val timesWithoutCashe = MutableList(coroutinesAll * 2) { 0.toLong() }
+val timesWithCashe = MutableList(allQueriesCount * 2) { 0.toLong() }
+val timesWithoutCashe = MutableList(allQueriesCount * 2) { 0.toLong() }
 @Volatile
 var totalQueries = 0
 
@@ -20,24 +20,25 @@ private fun execute(useCashe: Boolean) {
     totalQueries = 0
     println("----Executing queries ${if (useCashe) "with" else "without"} cashing----")
     val proxy = Proxy()
-    for (i in 0 until coroutinesForSelections) {
+    for (i in 0 until selectQueriesCount step 2) {
         GlobalScope.launch {
             executeStatement(selectFromVisitors(), useCashe, proxy, i)
             executeStatement(selectFromWaiters(), useCashe, proxy, i + 1)
             totalQueries += 2
         }
     }
-    for (i in coroutinesForSelections until coroutinesAll) {
+    for (i in selectQueriesCount until allQueriesCount step 2) {
         GlobalScope.launch {
-            val surname = if (i % 2 == 0) "Воронцова" else "Михайлова"
+            val surname = if (i % 4 == 0) "Воронцова" else "Михайлова"
+            val addressId = 8 + i % 4
             executeStatement(updateVisitors(surname), useCashe, proxy, i)
-            executeStatement(updateWaiters(8 + i % 2), useCashe, proxy, i + 1)
+            executeStatement(updateWaiters(addressId), useCashe, proxy, i + 1)
             totalQueries += 2
         }
     }
-    while (totalQueries < coroutinesAll * 2) {}
-    println("Average time response for ${coroutinesForSelections * 2} selections and ${
-        (coroutinesAll - coroutinesForSelections) * 2
+    while (totalQueries < allQueriesCount) {}
+    println("Average time response for $selectQueriesCount selections and ${
+        allQueriesCount - selectQueriesCount
     } updates: ${(if (useCashe) timesWithCashe else timesWithoutCashe).fold(0.toLong()) {
             it, prev -> prev + it
     } / totalQueries} ns\n")
