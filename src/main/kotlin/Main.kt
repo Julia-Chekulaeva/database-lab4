@@ -35,12 +35,12 @@ private fun execute(useCashe: Boolean) {
             totalQueries += 2
         }
     }
-    while (totalQueries < coroutinesAll) {}
+    while (totalQueries < coroutinesAll * 2) {}
     println("Average time response for ${coroutinesForSelections * 2} selections and ${
         (coroutinesAll - coroutinesForSelections) * 2
     } updates: ${(if (useCashe) timesWithCashe else timesWithoutCashe).fold(0.toLong()) {
             it, prev -> prev + it
-    } / coroutinesAll} ns\n")
+    } / totalQueries} ns\n")
 }
 
 private fun executeStatement(sql: String, useCash: Boolean, proxy: Proxy, coroutineNum: Int): String {
