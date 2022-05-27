@@ -38,7 +38,9 @@ private fun execute(useCashe: Boolean) {
             updateTotalQueries()
         }
     }
-    while (totalQueries < allQueriesCount) {}
+    while (totalQueries < allQueriesCount) {
+        print("")
+    }
     println("Average time response for $selectQueriesCount selections and ${
         allQueriesCount - selectQueriesCount
     } updates: ${(if (useCashe) timesWithCashe else timesWithoutCashe).fold(0.toLong()) {
